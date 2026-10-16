@@ -6,7 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { RoleSelectCard } from "@/components/RoleSelectCard";
 import { AuthStackParamList } from "@/types/navigation";
 import { colors } from "@/theme/theme";
-import { LanguagePicker } from "@/components/LanguagePicker";
+import { LanguageToggleButton } from "@/components/LanguageToggleButton";
 import { useLocale } from "@/store/LocaleContext";
 import { useAuth } from "@/store/AuthContext";
 
@@ -48,6 +48,10 @@ export function RoleSelectScreen({ navigation }: Props) {
         />
       </View>
 
+      <View style={[styles.langToggle, { top: insets.top + 8 }]}>
+        <LanguageToggleButton />
+      </View>
+
       <SafeAreaView style={styles.sheet} edges={["left", "right", "bottom"]}>
         <Text style={styles.heading}>{t("auth.whoIsUsing")}</Text>
         <Text style={styles.subheading}>{t("auth.chooseRole")}</Text>
@@ -55,9 +59,6 @@ export function RoleSelectScreen({ navigation }: Props) {
         <View style={styles.cards}>
           <RoleSelectCard title={t("auth.parent")} variant="parent" onPress={() => navigation.navigate("ParentLogin")} />
           <RoleSelectCard title={t("auth.child")} variant="child" onPress={() => navigation.navigate("ChildAccess")} />
-        </View>
-        <View style={styles.languageWrap}>
-          <LanguagePicker />
         </View>
       </SafeAreaView>
     </View>
@@ -104,8 +105,9 @@ const styles = StyleSheet.create({
   cards: {
     gap: 16,
   },
-  languageWrap: {
-    marginTop: 22,
-    alignItems: "center",
+  langToggle: {
+    position: "absolute",
+    right: 16,
+    zIndex: 10,
   },
 });

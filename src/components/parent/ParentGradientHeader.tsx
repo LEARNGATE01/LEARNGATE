@@ -24,6 +24,7 @@ export function ParentGradientHeader({
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const greeting = name ? t("parent.greeting", { name }) : null;
+  const heading = showGreeting && greeting ? greeting : title;
 
   return (
     <LinearGradient
@@ -33,16 +34,9 @@ export function ParentGradientHeader({
       style={[styles.outer, { paddingTop: insets.top + 14 }]}
     >
       <View style={styles.row}>
-        <View style={styles.textBlock}>
-          <Text variant="titleLarge" style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-          {showGreeting && greeting ? (
-            <Text variant="bodyMedium" style={styles.greeting} numberOfLines={1}>
-              {greeting}
-            </Text>
-          ) : null}
-        </View>
+        <Text variant="titleLarge" style={styles.title} numberOfLines={1}>
+          {heading}
+        </Text>
         {notificationsEnabled ? <NotificationBell enabled variant="header" /> : null}
       </View>
     </LinearGradient>
@@ -64,16 +58,10 @@ const styles = StyleSheet.create({
     gap: 12,
     minHeight: 68,
   },
-  textBlock: {
+  title: {
     flex: 1,
     minWidth: 0,
-  },
-  title: {
     color: "#FFFFFF",
     fontWeight: "700",
-  },
-  greeting: {
-    color: "rgba(255,255,255,0.92)",
-    marginTop: 2,
   },
 });
