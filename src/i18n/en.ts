@@ -360,6 +360,7 @@ export const en = {
     },
   },
   parent: {
+    greeting: "Hello, {{name}}!",
     tabs: {
       overview: "Home",
       children: "Manage Children",

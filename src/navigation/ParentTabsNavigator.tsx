@@ -4,7 +4,8 @@ import { ParentOverviewScreen } from "@/screens/parent/ParentOverviewScreen";
 import { ParentChildrenScreen } from "@/screens/parent/ParentChildrenScreen";
 import { ParentSettingsScreen } from "@/screens/parent/ParentSettingsScreen";
 import { ParentTabParamList } from "@/types/navigation";
-import { NotificationBell } from "@/components/NotificationBell";
+import { ParentGradientHeader } from "@/components/parent/ParentGradientHeader";
+import { useParentDisplayName } from "@/hooks/useParentDisplayName";
 import { useParentChildPushHealthCheck } from "@/hooks/useParentChildPushHealthCheck";
 import { useAuth } from "@/store/AuthContext";
 import { useTheme } from "react-native-paper";
@@ -16,6 +17,7 @@ export function ParentTabsNavigator() {
   const theme = useTheme();
   const { t, locale } = useLocale();
   const { appMode } = useAuth();
+  const parentName = useParentDisplayName();
   useParentChildPushHealthCheck(appMode === "parent");
 
   const parentTitles: Record<keyof ParentTabParamList, string> = {
@@ -29,11 +31,14 @@ export function ParentTabsNavigator() {
       key={locale}
       screenOptions={({ route }) => ({
         headerShown: true,
-        headerStyle: { backgroundColor: theme.colors.primary },
-        headerTintColor: "#FFFFFF",
-        headerTitleStyle: { fontWeight: "700" },
-        headerShadowVisible: false,
-        headerRight: () => <NotificationBell enabled={appMode === "parent"} variant="header" />,
+        header: () => (
+          <ParentGradientHeader
+            title={parentTitles[route.name as keyof ParentTabParamList]}
+            name={parentName}
+            showGreeting={route.name === "Overview"}
+            notificationsEnabled={appMode === "parent"}
+          />
+        ),
         title: parentTitles[route.name as keyof ParentTabParamList],
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,

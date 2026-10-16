@@ -364,6 +364,7 @@ export const fil: EnCatalog = {
     },
   },
   parent: {
+    greeting: "Kumusta, {{name}}!",
     tabs: {
       overview: "Home",
       children: "Pamahalaan ang mga Anak",

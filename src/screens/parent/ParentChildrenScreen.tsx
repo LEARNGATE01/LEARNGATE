@@ -1453,9 +1453,6 @@ export function ParentChildrenScreen() {
                 subtitle={t("parent.children.blockAppsSubtitle")}
                 style={styles.sectionHeaderInCard}
               />
-              <Text variant="bodySmall" style={styles.helper}>
-                {t("parent.children.blockAppsHint")}
-              </Text>
               <View style={styles.appGrid}>
                 {BLOCKABLE_APP_GROUPS.map((app) => {
                   const selected = screenRule ? isGroupFullySelected(screenRule.blocked_apps_json, app) : false;
