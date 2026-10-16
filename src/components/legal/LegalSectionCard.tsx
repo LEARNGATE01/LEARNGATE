@@ -1,7 +1,7 @@
-import { StyleSheet, View } from "react-native";
-import { Card, Divider, List, Text } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import { Card, List } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED } from "@/content/legalDocuments";
+import { LEGAL_LAST_UPDATED } from "@/content/legalDocuments";
 import { openLegalDocument } from "@/navigation/openLegalDocument";
 import { useAppColors } from "@/theme/useAppColors";
 import { radii, shadows } from "@/theme/theme";
@@ -19,10 +19,6 @@ export function LegalSectionCard() {
         left={(props) => <MaterialCommunityIcons {...props} name="scale-balance" size={24} color={c.primaryDark} />}
       />
       <Card.Content style={styles.content}>
-        <Text variant="bodySmall" style={{ color: c.subtext, lineHeight: 20 }}>
-          {t("legal.body")}
-        </Text>
-        <Divider style={styles.divider} />
         <List.Item
           title={t("legal.privacy")}
           description={t("legal.privacyDesc")}
@@ -39,12 +35,6 @@ export function LegalSectionCard() {
           onPress={() => openLegalDocument("terms")}
           style={styles.row}
         />
-        <View style={[styles.contactBox, { backgroundColor: c.mutedSurface }]}>
-          <MaterialCommunityIcons name="email-outline" size={18} color={c.subtext} />
-          <Text variant="bodySmall" style={{ color: c.subtext, flex: 1 }}>
-            {t("legal.contact", { email: LEGAL_CONTACT_EMAIL })}
-          </Text>
-        </View>
       </Card.Content>
     </Card>
   );
@@ -58,19 +48,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingTop: 0,
   },
-  divider: {
-    marginVertical: 8,
-  },
   row: {
     paddingHorizontal: 0,
-  },
-  contactBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: radii.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 8,
   },
 });

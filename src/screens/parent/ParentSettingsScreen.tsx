@@ -11,7 +11,6 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 import { DestructiveButton } from "@/components/DestructiveButton";
 import { formatAppError } from "@/utils/errors";
 import { useThemeMode } from "@/store/ThemeModeContext";
-import { registerAndSavePushToken } from "@/services/pushNotifications";
 import { LegalSectionCard } from "@/components/legal/LegalSectionCard";
 import { useLocale } from "@/store/LocaleContext";
 import { useAppToast } from "@/store/AppToastContext";
@@ -59,7 +58,6 @@ export function ParentSettingsScreen() {
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
-  const [pushRegistering, setPushRegistering] = useState(false);
 
   const deleteConfirmationMatches =
     deleteConfirmText.trim() === PARENT_ACCOUNT_DELETE_CONFIRMATION;
@@ -212,10 +210,6 @@ export function ParentSettingsScreen() {
 
   return (
     <ScreenContainer scroll onRefresh={onRefresh} refreshing={refreshing}>
-      <Text variant="titleMedium" style={styles.kicker}>
-        {t("parent.settings.kicker")}
-      </Text>
-
       {isLoading && !refreshing ? <ActivityIndicator size="small" color={c.primary} /> : null}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -281,29 +275,6 @@ export function ParentSettingsScreen() {
             disabled={!rule}
             onValueChange={(value) => setRule((prev) => (prev ? { ...prev, task_reminders_enabled: value } : prev))}
           />
-          <Divider />
-          <Text variant="bodySmall" style={styles.pushHint}>
-            {t("parent.settings.pushHint")}
-          </Text>
-          <Button
-            mode="outlined"
-            loading={pushRegistering}
-            disabled={pushRegistering}
-            onPress={async () => {
-              setPushRegistering(true);
-              try {
-                const result = await registerAndSavePushToken();
-                showToast(result.message, result.ok ? "success" : "error");
-                if (!result.ok && __DEV__) {
-                  console.warn("[push] registration:", result.message);
-                }
-              } finally {
-                setPushRegistering(false);
-              }
-            }}
-          >
-            {t("parent.settings.enablePush")}
-          </Button>
         </Card.Content>
       </Card>
 
@@ -339,7 +310,6 @@ export function ParentSettingsScreen() {
       <Card style={styles.card}>
         <Card.Title title={t("parent.settings.language")} />
         <Card.Content style={styles.block}>
-          <Text variant="bodySmall" style={styles.pushHint}>{t("parent.settings.languageSub")}</Text>
           <LanguagePicker />
         </Card.Content>
       </Card>
@@ -460,10 +430,6 @@ function createStyles(c: AppColors) {
     lineHeight: 18,
   },
   blockedHint: {
-    marginTop: 4,
-  },
-  pushHint: {
-    color: c.subtext,
     marginTop: 4,
   },
   appGrid: {

@@ -1081,10 +1081,6 @@ export function ParentChildrenScreen() {
 
   return (
     <ScreenContainer scroll onRefresh={onRefresh} refreshing={refreshing}>
-      <Text variant="titleMedium" style={styles.kicker}>
-        {t("parent.children.kicker")}
-      </Text>
-
       {isEmpty ? (
         <Card style={styles.childCard}>
           <Card.Content style={styles.cardContent}>
