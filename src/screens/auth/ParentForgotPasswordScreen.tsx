@@ -9,6 +9,7 @@ import { useAuth } from "@/store/AuthContext";
 import { useAppToast } from "@/store/AppToastContext";
 import { useLocale } from "@/store/LocaleContext";
 import { colors } from "@/theme/theme";
+import { authTypography } from "@/theme/authTypography";
 import { supabase } from "@/services/supabase";
 import { sendParentPasswordResetEmail } from "@/services/parentEmailAuth";
 import { formatAppError } from "@/utils/errors";
@@ -115,16 +116,21 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: {
+    ...authTypography.title,
     color: colors.text,
-    fontWeight: "700",
+    textAlign: "left",
     marginTop: 8,
   },
   subtitle: {
+    ...authTypography.subtitle,
     color: colors.subtext,
+    textAlign: "left",
     marginBottom: 8,
   },
   errorText: {
+    ...authTypography.feedback,
     color: "#B91C1C",
+    textAlign: "left",
     marginTop: 4,
   },
 });

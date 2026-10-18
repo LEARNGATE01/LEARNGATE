@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthStackParamList } from "@/types/navigation";
 import { useAuth } from "@/store/AuthContext";
 import { colors } from "@/theme/theme";
+import { authTypography } from "@/theme/authTypography";
+import { claimPendingRedirect, resetPendingRedirect } from "@/navigation/pendingAuthRedirect";
 import { supabase } from "@/services/supabase";
 import { signInWithGoogleOAuth } from "@/services/googleOAuth";
 import { formatAppError } from "@/utils/errors";
@@ -49,11 +51,16 @@ export function ParentLoginScreen({ navigation, route }: Props) {
   const [googleBusy, setGoogleBusy] = useState(false);
 
   useEffect(() => {
-    if (pendingPasswordReset) {
-      navigation.navigate("ParentResetPassword");
+    if (!pendingPasswordReset && !pendingParentSignup) {
+      resetPendingRedirect();
       return;
     }
-    if (pendingParentSignup) {
+    if (!claimPendingRedirect(1)) {
+      return;
+    }
+    if (pendingPasswordReset) {
+      navigation.navigate("ParentResetPassword");
+    } else if (pendingParentSignup) {
       navigation.navigate("ParentSignUp");
     }
   }, [navigation, pendingParentSignup, pendingPasswordReset]);
@@ -146,7 +153,7 @@ export function ParentLoginScreen({ navigation, route }: Props) {
         />
         <Pressable
           style={[styles.backBtn, { top: insets.top + 8 }]}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: "RoleSelect" }] })}
           accessibilityRole="button"
           accessibilityLabel={t("auth.login.goBack")}
           hitSlop={12}
@@ -354,16 +361,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    textAlign: "center",
+    ...authTypography.title,
   },
   cardSubtitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#6B7280",
-    textAlign: "center",
+    ...authTypography.subtitle,
     marginBottom: 4,
   },
   googleIcon: {
@@ -383,8 +384,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   googleLabel: {
-    fontSize: 16,
-    fontWeight: "600",
+    ...authTypography.label,
     color: "#374151",
   },
   dividerRow: {
@@ -399,10 +399,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#D1D5DB",
   },
   dividerText: {
-    fontSize: 12,
-    fontWeight: "600",
+    ...authTypography.caption,
     color: "#9CA3AF",
-    letterSpacing: 0.6,
   },
   field: {
     flexDirection: "row",
@@ -419,9 +417,8 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   fieldInput: {
+    ...authTypography.input,
     flex: 1,
-    fontSize: 16,
-    color: "#1F2937",
     paddingVertical: 12,
   },
   forgotBtn: {
@@ -432,8 +429,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   forgotLabel: {
-    fontSize: 14,
-    fontWeight: "600",
+    ...authTypography.link,
     color: GREEN,
   },
   signInBtn: {
@@ -444,8 +440,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   signInLabel: {
-    fontSize: 17,
-    fontWeight: "700",
+    ...authTypography.button,
     color: "#FFFFFF",
   },
   createBtn: {
@@ -457,8 +452,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   createLabel: {
-    fontSize: 17,
-    fontWeight: "700",
+    ...authTypography.button,
     color: GREEN,
   },
   btnPressed: {
@@ -468,20 +462,15 @@ const styles = StyleSheet.create({
     opacity: 0.65,
   },
   error: {
+    ...authTypography.feedback,
     color: "#B91C1C",
-    fontSize: 14,
-    textAlign: "center",
   },
   info: {
+    ...authTypography.feedback,
     color: "#166534",
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
   },
   warning: {
+    ...authTypography.feedback,
     color: colors.warning,
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 18,
   },
 });

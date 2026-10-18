@@ -129,6 +129,7 @@ export const en = {
       privacy: "Privacy Policy",
       createAccount: "Create Account",
       backToLogin: "Back to Login",
+      or: "OR",
       emailRequired: "Email is required.",
       emailPasswordRequired: "Email and password are required.",
       acceptLegalRequired: "Please accept the Terms & Conditions and Privacy Policy.",
@@ -139,8 +140,8 @@ export const en = {
       waitTitle: "Check your email",
       waitBody:
         "We sent a verification link to {{email}}. Open that message and tap the link. Come back here to finish creating your account.",
-      completeTitle: "Finish creating your account",
-      completeSubtitle: "Your email is verified. Set your name, password, and accept the terms.",
+      completeTitle: "Create Your Parent Account",
+      completeSubtitle: "Set your name and password to get started with LearnGate.",
       checkEmailTitle: "Verify your email",
       checkEmail:
         "We sent a verification link to {{email}}. Open that message and tap the link. Your parent account is created only after you verify.",

@@ -132,6 +132,7 @@ export const fil: EnCatalog = {
       privacy: "Patakaran sa Privacy",
       createAccount: "Gumawa ng Account",
       backToLogin: "Bumalik sa Login",
+      or: "O",
       emailRequired: "Kailangan ang email.",
       emailPasswordRequired: "Kailangan ang email at password.",
       acceptLegalRequired: "Pakisang-ayunan ang Mga Tuntunin at Kondisyon at Patakaran sa Privacy.",
@@ -142,8 +143,8 @@ export const fil: EnCatalog = {
       waitTitle: "Tingnan ang iyong email",
       waitBody:
         "Nagpadala kami ng verification link sa {{email}}. Buksan ang mensahe at i-tap ang link. Bumalik dito para tapusin ang paggawa ng account.",
-      completeTitle: "Tapusin ang paggawa ng account",
-      completeSubtitle: "Na-verify na ang iyong email. Ilagay ang pangalan, password, at sang-ayunan ang mga tuntunin.",
+      completeTitle: "Gawin ang Iyong Parent Account",
+      completeSubtitle: "Itakda ang iyong pangalan at password para makapagsimula sa LearnGate.",
       checkEmailTitle: "I-verify ang iyong email",
       checkEmail:
         "Nagpadala kami ng verification link sa {{email}}. Buksan ang mensahe at i-tap ang link. Magagawa ang parent account pagkatapos mong mag-verify.",

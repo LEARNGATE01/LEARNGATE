@@ -6,6 +6,8 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { RoleSelectCard } from "@/components/RoleSelectCard";
 import { AuthStackParamList } from "@/types/navigation";
 import { colors } from "@/theme/theme";
+import { authTypography } from "@/theme/authTypography";
+import { claimPendingRedirect, resetPendingRedirect } from "@/navigation/pendingAuthRedirect";
 import { LanguageToggleButton } from "@/components/LanguageToggleButton";
 import { useLocale } from "@/store/LocaleContext";
 import { useAuth } from "@/store/AuthContext";
@@ -28,12 +30,12 @@ export function RoleSelectScreen({ navigation }: Props) {
   const { pendingParentSignup, pendingPasswordReset } = useAuth();
 
   useEffect(() => {
-    if (pendingPasswordReset) {
-      navigation.navigate("ParentResetPassword");
+    if (!pendingPasswordReset && !pendingParentSignup) {
+      resetPendingRedirect();
       return;
     }
-    if (pendingParentSignup) {
-      navigation.navigate("ParentSignUp");
+    if (claimPendingRedirect(0)) {
+      navigation.navigate("ParentLogin");
     }
   }, [navigation, pendingParentSignup, pendingPasswordReset]);
 
@@ -89,17 +91,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
   },
   heading: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    textAlign: "center",
+    ...authTypography.title,
     marginBottom: 8,
   },
   subheading: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#6B7280",
-    textAlign: "center",
+    ...authTypography.subtitle,
     marginBottom: 28,
   },
   cards: {
