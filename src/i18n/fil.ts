@@ -216,8 +216,6 @@ export const fil: EnCatalog = {
       movementHeaderHint: "Mga ehersisyong may gabay ng camera na awtomatikong binibilang ang iyong mga ulit.",
       games: "Mga Laro",
       movement: "Aktibidad sa Galaw",
-      gamesHint:
-        "{{count}} laro para sa {{band}}s ({{shortLabel}}). Bawat round ay may 10 tanong — ang itinakdang gawain ay sumusunod sa antas mo.",
       movementHint:
         "Binibilang ng AI pose tracking ang squats, pag-unat ng braso, at jumping jacks gamit ang camera.",
       startLink: "Simulan ›",

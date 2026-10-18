@@ -136,13 +136,6 @@ export function ChildActivitiesScreen() {
                 <Text variant="titleMedium" style={styles.sectionTitle}>
                   {localizedBand.heroTitle}
                 </Text>
-                <Text variant="bodySmall" style={styles.sectionHint}>
-                  {t("child.activities.gamesHint", {
-                    count: ageGames.length,
-                    band: localizedBand.label.toLowerCase(),
-                    shortLabel: localizedBand.shortLabel,
-                  })}
-                </Text>
               </View>
             </View>
             <View style={styles.grid}>
@@ -231,7 +224,6 @@ function createStyles(c: ReturnType<typeof useAppColors>) {
     sectionIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     sectionText: { flex: 1 },
     sectionTitle: { color: c.text, fontWeight: "700" },
-    sectionHint: { color: c.subtext, marginTop: 2 },
     grid: {
       flexDirection: "row",
       flexWrap: "wrap",

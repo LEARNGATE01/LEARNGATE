@@ -213,8 +213,6 @@ export const en = {
       movementHeaderHint: "Camera-guided exercises that count your reps automatically.",
       games: "Games",
       movement: "Movement Activity",
-      gamesHint:
-        "{{count}} games picked for {{band}}s ({{shortLabel}}). Each round has 10 questions — assigned tasks use your learning level.",
       movementHint: "AI pose tracking counts squats, arm stretches, and jumping jacks from your camera.",
       startLink: "Start ›",
       repsStars: "{{reps}} reps · +{{stars}} stars",
