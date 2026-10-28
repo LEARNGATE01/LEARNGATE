@@ -272,7 +272,6 @@ export const fil: EnCatalog = {
       practiceGoal: "Practice · target {{reps}} ulit",
       gateyShows: "Ipinapakita ni {{name}} kung paano",
       gateyHint: "Sundin ang bawat galaw, pagkatapos buksan ang camera para sa iyong turn",
-      demoRep: "Demo rep {{current}} sa {{total}}",
       earnedStars: "Nakakuha ka ng {{count}} bituin!",
       loadingCamera: "Nilo-load ang camera…",
       cameraPermissionRequired: "Kailangan ang camera permission para bilangin ang mga ulit.",
@@ -291,7 +290,6 @@ export const fil: EnCatalog = {
       motionMode: "Motion mode",
       niceYourTurn: "Ang galing! Ikaw naman ang susunod.",
       standInFrame: "Tumayo sa loob ng frame. Ibig sabihin ng pula ay simulan ang galaw. Ibig sabihin ng berde ay tapusin ito. Makakakuha ka ng +1 kapag natapos ang ulit.",
-      watchAgain: "Panoorin ulit",
       yourTurnOpenCamera: "START",
       demonstrating: "Ipinapakita ni {{name}}…",
       demo: {

@@ -277,14 +277,6 @@ export function ChildExerciseSessionScreen({ route, navigation }: Props) {
     return unsub;
   }, [navigation, phase, stopWorkout]);
 
-  const startDemo = () => {
-    setError(null);
-    setDemoFinished(false);
-    setDemoRunId((n) => n + 1);
-    setCompleted(0);
-    setPhase("demo");
-  };
-
   const beginWorkout = async () => {
     setError(null);
     setStartingCamera(true);
@@ -518,7 +510,6 @@ export function ChildExerciseSessionScreen({ route, navigation }: Props) {
             key={`${selectedId}-${demoRunId}`}
             exerciseId={selectedId}
             exerciseTitle={exerciseTitle}
-            onComplete={() => setDemoFinished(true)}
           />
         ) : (
           <View style={[styles.controlCard, { backgroundColor: c.card }]}>
@@ -538,7 +529,6 @@ export function ChildExerciseSessionScreen({ route, navigation }: Props) {
             disabled={startingCamera}
             labelStyle={{ fontWeight: "800", letterSpacing: 1.2 }}
           />
-          <PrimaryButton label={t("child.exercise.watchAgain")} mode="outlined" onPress={startDemo} />
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
       </ScrollView>

@@ -268,7 +268,6 @@ export const en = {
       practiceGoal: "Practice · goal {{reps}} reps",
       gateyShows: "{{name}} shows you how",
       gateyHint: "Copy each move, then open the camera for your turn",
-      demoRep: "Demo rep {{current}} of {{total}}",
       earnedStars: "You earned {{count}} stars!",
       loadingCamera: "Loading camera…",
       cameraPermissionRequired: "Camera permission is required to count reps.",
@@ -287,7 +286,6 @@ export const en = {
       motionMode: "Motion mode",
       niceYourTurn: "Nice! Now it's your turn.",
       standInFrame: "Stand in the frame. Red means start the move. Green means finish it. You get +1 when the rep is complete.",
-      watchAgain: "Watch again",
       yourTurnOpenCamera: "START",
       demonstrating: "{{name}} is demonstrating…",
       demo: {

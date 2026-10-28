@@ -24,6 +24,7 @@ export function PrimaryButton({
       onPress={onPress}
       loading={loading}
       disabled={disabled || loading}
+      textColor={mode === "contained" ? "#FFFFFF" : undefined}
       style={[mode === "text" ? styles.textButton : styles.defaultButton]}
       labelStyle={labelStyle}
     >

@@ -281,6 +281,9 @@ export function createAppTheme(mode: AppThemeMode, appearance: AppAppearance) {
       primary: palette.primary,
       secondary: palette.secondary,
       tertiary: palette.tertiary,
+      // MD3 dark's default onPrimary is a dark violet, which showed up as
+      // navy/blue labels on green fills. Our primaries always pair with white.
+      onPrimary: "#FFFFFF",
       background: app.background,
       surface: app.card,
       surfaceVariant: app.surfaceTint,

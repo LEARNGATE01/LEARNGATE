@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "LEARNGATE",
-    "slug": "learngate",
+    "slug": "learngateclient",
     "scheme": "learngate",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -81,9 +81,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "c3b18f1d-485e-4efb-aae8-a22fac7245df"
+        "projectId": "3a436145-5a7f-48e7-b9ee-d575c47e8720"
       }
     },
-    "owner": "mrcandrs1"
+    "owner": "learngate01s-team"
   }
 }

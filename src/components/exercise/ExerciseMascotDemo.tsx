@@ -13,18 +13,15 @@ import {
 import { useLocale } from "@/store/LocaleContext";
 import type { TranslateFn } from "@/i18n/helpers";
 
-const DEMO_CYCLES = 2;
-
 type Props = {
   exerciseId: ExerciseId;
   exerciseTitle: string;
-  onComplete: () => void;
 };
 
 type DemoStep = {
   caption: string;
   durationMs: number;
-  poseAt: (t: number, cycle: number) => FigurePose;
+  poseAt: (t: number) => FigurePose;
 };
 
 function ease(t: number): number {
@@ -138,24 +135,21 @@ function buildSteps(exerciseId: ExerciseId, t: TranslateFn): DemoStep[] {
   }
 }
 
-export function ExerciseMascotDemo({ exerciseId, exerciseTitle, onComplete }: Props) {
+export function ExerciseMascotDemo({ exerciseId, exerciseTitle }: Props) {
   const c = useAppColors();
   const { t } = useLocale();
   const progress = useRef(new Animated.Value(0)).current;
   const [stepIndex, setStepIndex] = useState(0);
-  const [cycle, setCycle] = useState(1);
   const [pose, setPose] = useState<FigurePose>(NEUTRAL_FIGURE_POSE);
 
   useEffect(() => {
     let mounted = true;
     let currentStep = 0;
-    let currentCycle = 1;
     const demoSteps = buildSteps(exerciseId, t);
 
     const runStep = () => {
       if (!mounted) return;
       setStepIndex(currentStep);
-      setCycle(currentCycle);
       progress.setValue(0);
 
       const step = demoSteps[currentStep];
@@ -169,11 +163,6 @@ export function ExerciseMascotDemo({ exerciseId, exerciseTitle, onComplete }: Pr
         currentStep += 1;
         if (currentStep >= demoSteps.length) {
           currentStep = 0;
-          currentCycle += 1;
-          if (currentCycle > DEMO_CYCLES) {
-            onComplete();
-            return;
-          }
         }
         runStep();
       });
@@ -181,7 +170,7 @@ export function ExerciseMascotDemo({ exerciseId, exerciseTitle, onComplete }: Pr
 
     const listenerId = progress.addListener(({ value }) => {
       const step = demoSteps[currentStep];
-      if (step) setPose(step.poseAt(value, currentCycle));
+      if (step) setPose(step.poseAt(value));
     });
 
     runStep();
@@ -191,7 +180,7 @@ export function ExerciseMascotDemo({ exerciseId, exerciseTitle, onComplete }: Pr
       progress.removeListener(listenerId);
       progress.stopAnimation();
     };
-  }, [exerciseId, onComplete, progress, t]);
+  }, [exerciseId, progress, t]);
 
   const steps = buildSteps(exerciseId, t);
   const caption = steps[stepIndex]?.caption ?? t("child.exercise.demo.watchHow", { title: exerciseTitle });
@@ -211,9 +200,6 @@ export function ExerciseMascotDemo({ exerciseId, exerciseTitle, onComplete }: Pr
 
       <View style={[styles.captionBox, { backgroundColor: c.primary }]}>
         <Text style={styles.captionText}>{caption}</Text>
-        <Text style={styles.cycleText}>
-          {t("child.exercise.demoRep", { current: Math.min(cycle, DEMO_CYCLES), total: DEMO_CYCLES })}
-        </Text>
       </View>
     </View>
   );
@@ -244,11 +230,5 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 15,
     textAlign: "center",
-  },
-  cycleText: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 12,
-    marginTop: 4,
-    fontWeight: "600",
   },
 });
