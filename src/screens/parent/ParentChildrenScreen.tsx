@@ -17,6 +17,9 @@ import { BirthdayPickerModal } from "@/components/parent/BirthdayPickerModal";
 import { ParentSectionHeader } from "@/components/parent/ParentSectionHeader";
 import { ParentManageToast } from "@/components/parent/ParentManageToast";
 import { ParentChildLocationPreview } from "@/components/parent/ParentChildLocationPreview";
+import { ChildAvatar } from "@/components/parent/ChildAvatar";
+import { ChildPhotoPreviewModal } from "@/components/parent/ChildPhotoPreviewModal";
+import { ChildSelectDialog } from "@/components/parent/ChildSelectDialog";
 import { getEvidenceSignedUrl } from "@/services/taskEvidence";
 import { useParentSelectedChild } from "@/store/ParentSelectedChildContext";
 import { useAppColors } from "@/theme/useAppColors";
@@ -179,6 +182,7 @@ export function ParentChildrenScreen() {
   const [pinBusyChildId, setPinBusyChildId] = useState<string | null>(null);
   const [saveBusyChildId, setSaveBusyChildId] = useState<string | null>(null);
   const [childPickerVisible, setChildPickerVisible] = useState(false);
+  const [photoPreviewVisible, setPhotoPreviewVisible] = useState(false);
   const [toast, setToast] = useState<ManageToast | null>(null);
   const [durationPickerOpen, setDurationPickerOpen] = useState(false);
   const [bedtimePickerField, setBedtimePickerField] = useState<"start" | "end" | null>(null);
@@ -1116,15 +1120,14 @@ export function ParentChildrenScreen() {
               accessibilityRole="button"
               accessibilityLabel={t("parent.children.selectChild")}
             >
-              {selectedChild?.avatar_url ? (
-                <Image source={{ uri: selectedChild.avatar_url }} style={styles.childSelectorAvatar} />
-              ) : (
-                <View style={styles.childSelectorAvatarFallback}>
-                  <Text style={styles.childSelectorAvatarLetter}>
-                    {(selectedChild?.name ?? "?").slice(0, 1).toUpperCase()}
-                  </Text>
-                </View>
-              )}
+              <ChildAvatar
+                name={selectedChild?.name ?? "?"}
+                avatarUrl={selectedChild?.avatar_url}
+                size={52}
+                radius={radii.sm}
+                onPress={selectedChild?.avatar_url ? () => setPhotoPreviewVisible(true) : undefined}
+                accessibilityLabel={t("common.viewPhoto")}
+              />
               <Text variant="titleMedium" style={styles.childSelectorName}>
                 {selectedChild
                   ? `${selectedChild.name} (${formatChildAgeLine(selectedChild).split(" · ")[0]})`
@@ -1729,57 +1732,24 @@ export function ParentChildrenScreen() {
         durationMs={toast?.variant === "error" ? 4500 : 3200}
       />
 
-      <Portal>
-        <Dialog visible={childPickerVisible} onDismiss={() => setChildPickerVisible(false)} style={styles.pickerDialog}>
-          <Dialog.Title>{t("parent.children.selectChild")}</Dialog.Title>
-          <Dialog.Content style={styles.pickerDialogContent}>
-            <ScrollView
-              style={styles.pickerScroll}
-              contentContainerStyle={styles.pickerScrollContent}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator
-              keyboardShouldPersistTaps="handled"
-            >
-              {children.map((child) => (
-                <View key={child.id} style={[styles.pickerRow, { borderBottomColor: c.border }]}>
-                  <Pressable
-                    style={styles.pickerRowMain}
-                    onPress={() => {
-                      selectChild(child.id);
-                      setChildPickerVisible(false);
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("parent.children.selectChildNamed", { name: child.name })}
-                  >
-                    {child.avatar_url ? (
-                      <Image source={{ uri: child.avatar_url }} style={styles.pickerListAvatar} />
-                    ) : (
-                      <View style={styles.pickerListAvatarFallback}>
-                        <Text style={styles.pickerListAvatarLetter}>{child.name.slice(0, 1).toUpperCase()}</Text>
-                      </View>
-                    )}
-                    <View style={styles.pickerRowText}>
-                      <Text variant="titleSmall" style={{ color: c.text, fontWeight: "700" }}>
-                        {child.name}
-                      </Text>
-                      <Text variant="bodySmall" style={{ color: c.subtext }}>
-                        {formatChildAgeLine(child)}
-                      </Text>
-                    </View>
-                  </Pressable>
-                  <IconButton
-                    icon="delete-outline"
-                    iconColor="#B91C1C"
-                    size={22}
-                    onPress={() => setChildToDelete(child)}
-                    accessibilityLabel={t("parent.children.removeChildNamed", { name: child.name })}
-                  />
-                </View>
-              ))}
-            </ScrollView>
-          </Dialog.Content>
-        </Dialog>
+      <ChildSelectDialog
+        visible={childPickerVisible}
+        title={t("parent.children.selectChild")}
+        options={children}
+        onDismiss={() => setChildPickerVisible(false)}
+        onSelect={(childId) => {
+          selectChild(childId);
+          setChildPickerVisible(false);
+        }}
+        selectAccessibilityLabel={(name) => t("parent.children.selectChildNamed", { name })}
+        onRemove={(option) => {
+          const row = children.find((child) => child.id === option.id);
+          if (row) setChildToDelete(row);
+        }}
+        removeAccessibilityLabel={(name) => t("parent.children.removeChildNamed", { name })}
+      />
 
+      <Portal>
         <Dialog visible={Boolean(childToDelete)} onDismiss={() => !deleteBusy && setChildToDelete(null)}>
           <Dialog.Title>{t("parent.children.removeChildTitle")}</Dialog.Title>
           <Dialog.Content>
@@ -2022,6 +1992,14 @@ export function ParentChildrenScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <ChildPhotoPreviewModal
+        visible={photoPreviewVisible && Boolean(selectedChild?.avatar_url)}
+        uri={selectedChild?.avatar_url ?? null}
+        title={selectedChild?.name}
+        closeLabel={t("common.close")}
+        onClose={() => setPhotoPreviewVisible(false)}
+      />
     </ScreenContainer>
   );
 }
@@ -2053,85 +2031,11 @@ function createStyles(c: AppColors) {
   cardContent: {
     gap: 10,
   },
-  pickerDialog: {
-    maxHeight: "85%",
-  },
-  pickerDialogContent: {
-    paddingHorizontal: 0,
-    paddingTop: 0,
-    maxHeight: 360,
-  },
-  pickerScroll: {
-    maxHeight: 360,
-  },
-  pickerScrollContent: {
-    paddingBottom: 8,
-  },
-  pickerRowMain: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 10,
-    paddingLeft: 4,
-  },
-  pickerRowText: {
-    flex: 1,
-    minWidth: 0,
-  },
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginTop: 4,
-  },
-  pickerListAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.sm,
-    marginLeft: 8,
-    backgroundColor: c.sectionIconBg,
-  },
-  pickerListAvatarFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.sm,
-    marginLeft: 8,
-    backgroundColor: c.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pickerListAvatarLetter: {
-    color: "#FFFFFF",
-    fontWeight: "800",
-    fontSize: 16,
-  },
-  pickerRow: {
-    borderWidth: 1,
-    borderColor: c.border,
-    backgroundColor: c.card,
-    borderRadius: radii.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  pickerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flex: 1,
-  },
-  pickerTextWrap: {
-    flex: 1,
-  },
-  pickerLabel: {
-    color: c.subtext,
-  },
-  pickerValue: {
-    color: c.text,
-    fontWeight: "700",
   },
   sectionCard: {
     backgroundColor: c.mutedSurface,
@@ -2207,25 +2111,6 @@ function createStyles(c: AppColors) {
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: c.card,
-  },
-  childSelectorAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: radii.sm,
-    backgroundColor: c.sectionIconBg,
-  },
-  childSelectorAvatarFallback: {
-    width: 52,
-    height: 52,
-    borderRadius: radii.sm,
-    backgroundColor: c.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  childSelectorAvatarLetter: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#FFFFFF",
   },
   childSelectorName: {
     flex: 1,

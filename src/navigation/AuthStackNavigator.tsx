@@ -31,7 +31,7 @@ export function AuthStackNavigator() {
       <Stack.Screen
         name="ParentForgotPassword"
         component={ParentForgotPasswordScreen}
-        options={{ title: t("auth.forgotPassword.title"), ...greenHeader }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="ParentResetPassword"

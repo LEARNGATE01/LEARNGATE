@@ -2,6 +2,7 @@ export const en = {
   common: {
     cancel: "Cancel",
     close: "Close",
+    viewPhoto: "View photo",
     save: "Save",
     logOut: "Log Out",
     signOut: "Sign out",
@@ -93,7 +94,7 @@ export const en = {
       subtitle: "Enter the email for your parent account. We will send a reset link.",
       email: "Email",
       emailRequired: "Email is required.",
-      sendLink: "Send reset link",
+      sendLink: "Send Reset Link",
       sending: "Sending…",
       resend: "Resend reset email",
       backToLogin: "Back to Login",

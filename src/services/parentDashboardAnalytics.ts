@@ -20,6 +20,8 @@ export type ChildRow = {
   last_seen_at: string | null;
   child_user_id: string | null;
   avatar_url?: string | null;
+  birthday?: string | null;
+  age?: number | null;
 };
 
 export type ChildMonitor = {

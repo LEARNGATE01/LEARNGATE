@@ -5,6 +5,7 @@ export const fil: EnCatalog = {
   common: {
     cancel: "Kanselahin",
     close: "Isara",
+    viewPhoto: "Tingnan ang larawan",
     save: "I-save",
     logOut: "Mag-log out",
     signOut: "Mag-sign out",
@@ -96,7 +97,7 @@ export const fil: EnCatalog = {
       subtitle: "Ilagay ang email ng parent account mo. Magpapadala kami ng reset link.",
       email: "Email",
       emailRequired: "Kailangan ang email.",
-      sendLink: "Ipadala ang reset link",
+      sendLink: "Ipadala ang Reset Link",
       sending: "Ipinapadala…",
       resend: "Ipadala ulit ang reset email",
       backToLogin: "Bumalik sa Login",

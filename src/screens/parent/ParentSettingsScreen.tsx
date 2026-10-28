@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { ActivityIndicator, Button, Card, Chip, Dialog, Divider, Menu, Portal, Switch, Text, TextInput } from "react-native-paper";
+import { useFocusEffect } from "@react-navigation/native";
+import { ActivityIndicator, Button, Card, Chip, Dialog, Divider, Portal, Switch, Text, TextInput } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { radii, shadows, type AppColors } from "@/theme/theme";
@@ -16,6 +17,9 @@ import { useLocale } from "@/store/LocaleContext";
 import { useAppToast } from "@/store/AppToastContext";
 import { LanguagePicker } from "@/components/LanguagePicker";
 import { useParentSelectedChild } from "@/store/ParentSelectedChildContext";
+import { ChildAvatar } from "@/components/parent/ChildAvatar";
+import { ChildPhotoPreviewModal } from "@/components/parent/ChildPhotoPreviewModal";
+import { ChildSelectDialog } from "@/components/parent/ChildSelectDialog";
 import {
   deleteParentAccount,
   PARENT_ACCOUNT_DELETE_CONFIRMATION,
@@ -24,6 +28,9 @@ import {
 type ChildSummary = {
   id: string;
   name: string;
+  avatar_url: string | null;
+  birthday: string | null;
+  age: number | null;
   daily_limit_minutes: number;
   bedtime_start: string;
   bedtime_end: string;
@@ -50,6 +57,7 @@ export function ParentSettingsScreen() {
   const styles = useMemo(() => createStyles(c), [c]);
   const [children, setChildren] = useState<ChildSummary[]>([]);
   const [childMenuVisible, setChildMenuVisible] = useState(false);
+  const [photoPreviewVisible, setPhotoPreviewVisible] = useState(false);
   const [rule, setRule] = useState<ScreenRule | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,17 +70,19 @@ export function ParentSettingsScreen() {
   const deleteConfirmationMatches =
     deleteConfirmText.trim() === PARENT_ACCOUNT_DELETE_CONFIRMATION;
 
-  const loadSettings = useCallback(async (fromPull = false) => {
+  const loadSettings = useCallback(async (fromPull = false, silent = false) => {
     if (!isSupabaseConfigured || !supabase) {
       setIsLoading(false);
       setRefreshing(false);
       return;
     }
 
-    if (fromPull) {
-      setRefreshing(true);
-    } else {
-      setIsLoading(true);
+    if (!silent) {
+      if (fromPull) {
+        setRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
     }
     setError(null);
     const {
@@ -89,7 +99,7 @@ export function ParentSettingsScreen() {
 
     const { data: childData, error: childrenError } = await supabase
       .from("children")
-      .select("id, name, daily_limit_minutes, bedtime_start, bedtime_end, difficulty_level, audio_guide_rate")
+      .select("id, name, avatar_url, birthday, age, daily_limit_minutes, bedtime_start, bedtime_end, difficulty_level, audio_guide_rate")
       .eq("parent_id", user.id)
       .order("created_at", { ascending: true });
 
@@ -140,6 +150,18 @@ export function ParentSettingsScreen() {
   useEffect(() => {
     void loadSettings(false);
   }, [loadSettings]);
+
+  // Refresh when returning to the tab so children added in Manage Children show up.
+  const hasFocusedOnceRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
+      void loadSettings(false, true);
+    }, [loadSettings])
+  );
 
   useEffect(() => {
     if (!selectedChildId) {
@@ -217,42 +239,34 @@ export function ParentSettingsScreen() {
         <Card style={styles.card}>
           <Card.Title title={t("parent.settings.selectedChild")} />
           <Card.Content style={styles.block}>
-            <Menu
-              visible={childMenuVisible}
-              onDismiss={() => setChildMenuVisible(false)}
-              anchor={
-                <Pressable
-                  onPress={() => setChildMenuVisible(true)}
-                  style={styles.pickerRow}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("parent.settings.selectChild")}
-                >
-                  <View style={styles.pickerLeft}>
-                    <MaterialCommunityIcons name="account-child-outline" size={20} color={c.primaryDark} />
-                    <View style={styles.pickerTextWrap}>
-                      <Text variant="labelMedium" style={styles.pickerLabel}>
-                        {t("parent.settings.child")}
-                      </Text>
-                      <Text variant="titleSmall" style={styles.pickerValue}>
-                        {selectedChild ? selectedChild.name : t("parent.settings.selectChild")}
-                      </Text>
-                    </View>
-                  </View>
-                  <MaterialCommunityIcons name="chevron-down" size={22} color={c.subtext} />
-                </Pressable>
-              }
+            <Pressable
+              onPress={() => setChildMenuVisible(true)}
+              style={styles.pickerRow}
+              accessibilityRole="button"
+              accessibilityLabel={t("parent.settings.selectChild")}
             >
-              {children.map((child) => (
-                <Menu.Item
-                  key={child.id}
-                  title={child.name}
-                  onPress={() => {
-                    selectChild(child.id);
-                    setChildMenuVisible(false);
-                  }}
+              <View style={styles.pickerLeft}>
+                <ChildAvatar
+                  name={selectedChild?.name ?? t("parent.settings.child")}
+                  avatarUrl={selectedChild?.avatar_url ?? null}
+                  size={52}
+                  radius={radii.sm}
+                  onPress={
+                    selectedChild?.avatar_url ? () => setPhotoPreviewVisible(true) : undefined
+                  }
+                  accessibilityLabel={t("common.viewPhoto")}
                 />
-              ))}
-            </Menu>
+                <View style={styles.pickerTextWrap}>
+                  <Text variant="labelMedium" style={styles.pickerLabel}>
+                    {t("parent.settings.child")}
+                  </Text>
+                  <Text variant="titleSmall" style={styles.pickerValue}>
+                    {selectedChild ? selectedChild.name : t("parent.settings.selectChild")}
+                  </Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons name="chevron-down" size={22} color={c.subtext} />
+            </Pressable>
           </Card.Content>
         </Card>
       ) : (
@@ -400,6 +414,26 @@ export function ParentSettingsScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <ChildPhotoPreviewModal
+        visible={photoPreviewVisible && Boolean(selectedChild?.avatar_url)}
+        uri={selectedChild?.avatar_url ?? null}
+        title={selectedChild?.name}
+        closeLabel={t("common.close")}
+        onClose={() => setPhotoPreviewVisible(false)}
+      />
+
+      <ChildSelectDialog
+        visible={childMenuVisible}
+        title={t("parent.settings.selectChild")}
+        options={children}
+        onDismiss={() => setChildMenuVisible(false)}
+        onSelect={(childId) => {
+          selectChild(childId);
+          setChildMenuVisible(false);
+        }}
+        selectAccessibilityLabel={(name) => t("parent.children.selectChildNamed", { name })}
+      />
     </ScreenContainer>
   );
 }

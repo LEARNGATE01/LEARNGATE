@@ -1,16 +1,22 @@
-import { Image, Pressable, StyleSheet, View } from "react-native";
-import { Menu, Text } from "react-native-paper";
+import { useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { formatAppTimeShort, type ChildMonitor } from "@/services/parentDashboardAnalytics";
 import { useAppColors } from "@/theme/useAppColors";
 import type { AppColors } from "@/theme/theme";
 import { radii, shadows } from "@/theme/theme";
 import { useLocale } from "@/store/LocaleContext";
+import { ChildAvatar } from "@/components/parent/ChildAvatar";
+import { ChildPhotoPreviewModal } from "@/components/parent/ChildPhotoPreviewModal";
+import { ChildSelectDialog } from "@/components/parent/ChildSelectDialog";
 
 export type LiveMonitorChildOption = {
   id: string;
   name: string;
   avatar_url: string | null;
+  birthday?: string | null;
+  age?: number | null;
 };
 
 type ParentLiveMonitoringCardProps = {
@@ -34,6 +40,8 @@ export function ParentLiveMonitoringCard({
 }: ParentLiveMonitoringCardProps) {
   const c = useAppColors();
   const { t } = useLocale();
+  const [photoPreviewVisible, setPhotoPreviewVisible] = useState(false);
+  const selectedChild = childOptions.find((child) => child.id === selectedChildId);
   const deviceLine = monitor.hasLinkedAccount
     ? t("parent.monitor.appLogin", { seen: monitor.lastSeenLabel })
     : t("parent.monitor.pinLogin", { seen: monitor.lastSeenLabel });
@@ -43,53 +51,42 @@ export function ParentLiveMonitoringCard({
       <Text style={[styles.sectionTitle, { color: c.primaryDark }]}>{t("parent.monitor.liveTitle")}</Text>
       <View style={[styles.card, { borderColor: c.border, backgroundColor: c.card }]}>
         <View style={styles.profileRow}>
-          <View style={[styles.avatarWrap, { backgroundColor: c.surfaceTint }]}>
-            {childOptions.find((child) => child.id === selectedChildId)?.avatar_url ? (
-              <Image
-                source={{ uri: childOptions.find((child) => child.id === selectedChildId)!.avatar_url! }}
-                style={styles.avatar}
-              />
-            ) : (
-              <View style={[styles.avatarFallback, { backgroundColor: c.surfaceTintBorder }]}>
-                <Text style={[styles.avatarLetter, { color: c.primaryDark }]}>
-                  {monitor.childName.slice(0, 1).toUpperCase()}
-                </Text>
-              </View>
-            )}
-          </View>
+          <ChildAvatar
+            name={monitor.childName}
+            avatarUrl={selectedChild?.avatar_url ?? null}
+            size={48}
+            radius={12}
+            onPress={selectedChild?.avatar_url ? () => setPhotoPreviewVisible(true) : undefined}
+            accessibilityLabel={t("common.viewPhoto")}
+          />
           <View style={styles.profileText}>
             <Text style={[styles.name, { color: c.primaryDark }]}>{monitor.childName}</Text>
             <Text style={[styles.device, { color: c.subtext }]}>{deviceLine}</Text>
           </View>
-          <Menu
-            visible={menuVisible}
-            onDismiss={onDismissMenu}
-            anchor={
-              <Pressable
-                onPress={onOpenMenu}
-                style={[styles.childPill, { backgroundColor: c.surfaceTint, borderColor: c.surfaceTintBorder }]}
-                accessibilityRole="button"
-                accessibilityLabel={t("parent.monitor.selectChild")}
-              >
-                <Text style={[styles.childPillText, { color: c.primaryDark }]} numberOfLines={1}>
-                  {monitor.childName}
-                </Text>
-                <MaterialCommunityIcons name="chevron-down" size={18} color={c.primaryDark} />
-              </Pressable>
-            }
+          <Pressable
+            onPress={onOpenMenu}
+            style={[styles.childPill, { backgroundColor: c.surfaceTint, borderColor: c.surfaceTintBorder }]}
+            accessibilityRole="button"
+            accessibilityLabel={t("parent.monitor.selectChild")}
           >
-            {childOptions.map((child) => (
-              <Menu.Item
-                key={child.id}
-                title={child.name}
-                onPress={() => {
-                  onSelectChild(child.id);
-                  onDismissMenu();
-                }}
-              />
-            ))}
-          </Menu>
+            <Text style={[styles.childPillText, { color: c.primaryDark }]} numberOfLines={1}>
+              {monitor.childName}
+            </Text>
+            <MaterialCommunityIcons name="chevron-down" size={18} color={c.primaryDark} />
+          </Pressable>
         </View>
+
+        <ChildSelectDialog
+          visible={menuVisible}
+          title={t("parent.monitor.selectChild")}
+          options={childOptions}
+          onDismiss={onDismissMenu}
+          onSelect={(childId) => {
+            onSelectChild(childId);
+            onDismissMenu();
+          }}
+          selectAccessibilityLabel={(name) => t("parent.children.selectChildNamed", { name })}
+        />
 
         <View style={[styles.statsRow, { borderTopColor: c.border }]}>
           <Stat value={String(monitor.taskCount)} label={t("parent.monitor.task")} colors={c} />
@@ -101,6 +98,14 @@ export function ParentLiveMonitoringCard({
           <Stat value={formatAppTimeShort(monitor.appTimeSeconds)} label={t("parent.monitor.appTimeLabel")} colors={c} />
         </View>
       </View>
+
+      <ChildPhotoPreviewModal
+        visible={photoPreviewVisible && Boolean(selectedChild?.avatar_url)}
+        uri={selectedChild?.avatar_url ?? null}
+        title={monitor.childName}
+        closeLabel={t("common.close")}
+        onClose={() => setPhotoPreviewVisible(false)}
+      />
     </View>
   );
 }
@@ -134,25 +139,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-  },
-  avatarWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  avatar: {
-    width: "100%",
-    height: "100%",
-  },
-  avatarFallback: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarLetter: {
-    fontSize: 20,
-    fontWeight: "800",
   },
   profileText: {
     flex: 1,

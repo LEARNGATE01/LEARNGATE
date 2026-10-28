@@ -1,9 +1,19 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { Text, TextInput } from "react-native-paper";
+import {
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
+import { Text } from "react-native-paper";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { PrimaryButton } from "@/components/PrimaryButton";
-import { ScreenContainer } from "@/components/ScreenContainer";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthStackParamList } from "@/types/navigation";
 import { useAuth } from "@/store/AuthContext";
 import { useAppToast } from "@/store/AppToastContext";
@@ -16,7 +26,15 @@ import { formatAppError } from "@/utils/errors";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "ParentForgotPassword">;
 
+const GREEN = colors.roleSelectGreen;
+const SHEET_BG = "#F6F7EC";
+const CARD_OVERLAP = 20;
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const HERO_HEIGHT = Math.round(SCREEN_WIDTH * (809 / 1080));
+
 export function ParentForgotPasswordScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
   const { isSupabaseConfigured } = useAuth();
   const { t } = useLocale();
   const { showToast } = useAppToast();
@@ -24,6 +42,10 @@ export function ParentForgotPasswordScreen({ navigation, route }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const goToLogin = () => {
+    navigation.navigate("ParentLogin", { email: email.trim() || undefined });
+  };
 
   const handleSend = async () => {
     if (!isSupabaseConfigured || !supabase) {
@@ -54,83 +76,192 @@ export function ParentForgotPasswordScreen({ navigation, route }: Props) {
     showToast(t("auth.forgotPassword.sentToast"));
   };
 
+  const submitLabel = isSubmitting
+    ? t("auth.forgotPassword.sending")
+    : sent
+      ? t("auth.forgotPassword.resend")
+      : t("auth.forgotPassword.sendLink");
+
   return (
-    <ScreenContainer scroll>
-      <View style={styles.content}>
-        <Text variant="headlineLarge" style={styles.title}>
-          {t("auth.forgotPassword.title")}
-        </Text>
-        <Text variant="bodyLarge" style={styles.subtitle}>
-          {sent
-            ? t("auth.forgotPassword.waitBody", { email: email.trim() })
-            : t("auth.forgotPassword.subtitle")}
-        </Text>
-
-        {!sent ? (
-          <TextInput
-            label={t("auth.forgotPassword.email")}
-            mode="outlined"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        ) : null}
-
-        {!sent ? (
-          <PrimaryButton
-            label={isSubmitting ? t("auth.forgotPassword.sending") : t("auth.forgotPassword.sendLink")}
-            onPress={() => void handleSend()}
-            disabled={isSubmitting}
-            loading={isSubmitting}
-          />
-        ) : (
-          <PrimaryButton
-            label={t("auth.forgotPassword.resend")}
-            onPress={() => void handleSend()}
-            disabled={isSubmitting}
-            loading={isSubmitting}
-          />
-        )}
-
-        <PrimaryButton
-          label={t("auth.forgotPassword.backToLogin")}
-          onPress={() => navigation.navigate("ParentLogin", { email: email.trim() || undefined })}
-          mode="text"
+    <View style={styles.screen}>
+      <View style={[styles.headerWrap, { height: HERO_HEIGHT + insets.top, paddingTop: insets.top }]}>
+        <Image
+          source={require("../../../assets/parent-forgot-hero.png")}
+          style={styles.heroImage}
+          resizeMode="cover"
+          accessibilityLabel={t("auth.forgotPassword.title")}
         />
-
-        {error ? (
-          <Text variant="bodySmall" style={styles.errorText}>
-            {error}
-          </Text>
-        ) : null}
+        <Pressable
+          style={[styles.backBtn, { top: insets.top + 8 }]}
+          onPress={goToLogin}
+          accessibilityRole="button"
+          accessibilityLabel={t("auth.login.goBack")}
+          hitSlop={12}
+        />
       </View>
-    </ScreenContainer>
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+      >
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t("auth.forgotPassword.title")}</Text>
+            <Text style={styles.cardSubtitle}>
+              {sent ? t("auth.forgotPassword.waitBody", { email: email.trim() }) : t("auth.forgotPassword.subtitle")}
+            </Text>
+
+            {!sent ? (
+              <View style={styles.field}>
+                <MaterialCommunityIcons name="email-outline" size={22} color={GREEN} style={styles.fieldIcon} />
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder={t("auth.forgotPassword.email")}
+                  placeholderTextColor="#9CA3AF"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            ) : null}
+
+            <Pressable
+              onPress={() => void handleSend()}
+              disabled={isSubmitting}
+              style={({ pressed }) => [
+                styles.primaryBtn,
+                (pressed || isSubmitting) && styles.btnPressed,
+                isSubmitting && styles.btnDisabled,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={submitLabel}
+            >
+              <Text style={styles.primaryLabel}>{submitLabel}</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={goToLogin}
+              style={({ pressed }) => [styles.outlineBtn, pressed && styles.btnPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={t("auth.forgotPassword.backToLogin")}
+            >
+              <Text style={styles.outlineLabel}>{t("auth.forgotPassword.backToLogin")}</Text>
+            </Pressable>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
+  screen: {
     flex: 1,
-    gap: 12,
+    backgroundColor: SHEET_BG,
   },
-  title: {
+  flex: {
+    flex: 1,
+  },
+  headerWrap: {
+    width: SCREEN_WIDTH,
+    backgroundColor: GREEN,
+    overflow: "hidden",
+  },
+  heroImage: {
+    width: SCREEN_WIDTH,
+    height: HERO_HEIGHT,
+  },
+  backBtn: {
+    position: "absolute",
+    left: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    marginTop: -CARD_OVERLAP,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 22,
+    gap: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardTitle: {
     ...authTypography.title,
-    color: colors.text,
-    textAlign: "left",
-    marginTop: 8,
   },
-  subtitle: {
+  cardSubtitle: {
     ...authTypography.subtitle,
-    color: colors.subtext,
-    textAlign: "left",
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  errorText: {
+  field: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: GREEN,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    backgroundColor: "#FFFFFF",
+    gap: 10,
+  },
+  fieldIcon: {
+    marginRight: 2,
+  },
+  fieldInput: {
+    ...authTypography.input,
+    flex: 1,
+    paddingVertical: 12,
+  },
+  primaryBtn: {
+    backgroundColor: GREEN,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  primaryLabel: {
+    ...authTypography.button,
+    color: "#FFFFFF",
+  },
+  outlineBtn: {
+    borderWidth: 2,
+    borderColor: GREEN,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+  },
+  outlineLabel: {
+    ...authTypography.button,
+    color: GREEN,
+  },
+  btnPressed: {
+    opacity: 0.9,
+  },
+  btnDisabled: {
+    opacity: 0.65,
+  },
+  error: {
     ...authTypography.feedback,
     color: "#B91C1C",
-    textAlign: "left",
-    marginTop: 4,
   },
 });

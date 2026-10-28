@@ -124,7 +124,13 @@ function formatAppUsageDetail(eventAt: string, durationSeconds: number | null, t
   return used ? `${opened} · ${used}` : opened;
 }
 
-type ManagedChild = { id: string; name: string; avatar_url: string | null };
+type ManagedChild = {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  birthday?: string | null;
+  age?: number | null;
+};
 
 export function ParentOverviewScreen() {
   const { isSupabaseConfigured } = useAuth();
@@ -278,7 +284,7 @@ export function ParentOverviewScreen() {
     }
   }, [selectedChildId, loadRecentActivityForChild, showSuccess]);
 
-  const loadDashboard = useCallback(async (fromPull = false) => {
+  const loadDashboard = useCallback(async (fromPull = false, silent = false) => {
     if (!isSupabaseConfigured || !supabase) {
       setStats([
         { label: t("parent.overview.childrenManaged"), value: "0" },
@@ -296,8 +302,10 @@ export function ParentOverviewScreen() {
       return;
     }
 
-    if (fromPull) setRefreshing(true);
-    else setIsLoading(true);
+    if (!silent) {
+      if (fromPull) setRefreshing(true);
+      else setIsLoading(true);
+    }
 
     const {
       data: { user },
@@ -314,7 +322,7 @@ export function ParentOverviewScreen() {
     const { data: children, error: childrenError } = await supabase
       .from("children")
       .select(
-        "id, name, stars, stars_lifetime, daily_limit_minutes, difficulty_level, is_online, last_seen_at, child_user_id, avatar_url"
+        "id, name, stars, stars_lifetime, daily_limit_minutes, difficulty_level, is_online, last_seen_at, child_user_id, avatar_url, birthday, age"
       )
       .eq("parent_id", user.id);
 
@@ -386,6 +394,8 @@ export function ParentOverviewScreen() {
       id: c.id,
       name: c.name ?? t("parent.overview.childFallback"),
       avatar_url: c.avatar_url ?? null,
+      birthday: c.birthday ?? null,
+      age: c.age ?? null,
     }));
 
     const weeklySnapshots = await fetchLatestWeeklySnapshots(childIds);
@@ -446,6 +456,19 @@ export function ParentOverviewScreen() {
   useEffect(() => {
     void loadDashboard(false);
   }, [loadDashboard]);
+
+  // Children can be added/removed from Manage Children while Home stays mounted,
+  // so refresh when the tab regains focus (skip the first focus: mount loaded it).
+  const hasFocusedOnceRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
+      void loadDashboard(false, true);
+    }, [loadDashboard])
+  );
 
   const loadStarHistory = useCallback(async (childId: string) => {
     setStarHistoryLoading(true);
