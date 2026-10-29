@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Speech from "expo-speech";
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 type AudioGuidanceState = {
   enabled: boolean;
@@ -21,6 +21,10 @@ const AudioGuidanceContext = createContext<AudioGuidanceContextValue | undefined
 export function AudioGuidanceProvider({ children }: PropsWithChildren) {
   const [enabled, setEnabled] = useState(true);
   const [rate, setRate] = useState(0.92);
+  /** Increments on every speak/stop so a queued utterance can tell it went stale. */
+  const utteranceTokenRef = useRef(0);
+  /** Whether our current utterance is still being spoken. */
+  const speakingRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -46,8 +50,12 @@ export function AudioGuidanceProvider({ children }: PropsWithChildren) {
   }, [enabled, rate]);
 
   const stop = useCallback(() => {
+    utteranceTokenRef.current += 1;
+    speakingRef.current = false;
     try {
-      Speech.stop();
+      void Speech.stop().catch(() => {
+        // ignore
+      });
     } catch {
       // ignore
     }
@@ -60,11 +68,33 @@ export function AudioGuidanceProvider({ children }: PropsWithChildren) {
       if (!effectiveEnabled) return;
       const trimmed = text.trim();
       if (!trimmed) return;
+
+      const token = (utteranceTokenRef.current += 1);
+      const start = () => {
+        if (token !== utteranceTokenRef.current) return;
+        const settle = () => {
+          if (token === utteranceTokenRef.current) speakingRef.current = false;
+        };
+        speakingRef.current = true;
+        try {
+          Speech.speak(trimmed, { rate: effectiveRate, onDone: settle, onStopped: settle, onError: settle });
+        } catch {
+          speakingRef.current = false;
+        }
+      };
+
+      // Nothing is playing: speak right away. Calling stop() first and then
+      // speak() back-to-back makes Android drop the new utterance, which is why
+      // the question after a wrong answer sometimes was never read aloud.
+      if (!speakingRef.current) {
+        start();
+        return;
+      }
+
       try {
-        Speech.stop();
-        Speech.speak(trimmed, { rate: effectiveRate });
+        void Speech.stop().then(start, start);
       } catch {
-        // ignore
+        start();
       }
     },
     [enabled, rate]

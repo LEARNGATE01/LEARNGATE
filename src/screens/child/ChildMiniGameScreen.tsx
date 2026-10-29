@@ -84,6 +84,17 @@ type NumberRound = {
   choices: number[];
 };
 
+/** How long the correct/wrong banner (and its audio) stays before the next question. */
+const FEEDBACK_HOLD_MS = 900;
+/** Small pause before reading a question so it does not fight the feedback audio. */
+const PROMPT_DELAY_MS = 300;
+/** Longer wait while feedback is still on screen. */
+const PROMPT_AFTER_FEEDBACK_MS = FEEDBACK_HOLD_MS + 150;
+/** Placeholder used only while the real difficulty is still resolving. */
+const DEFAULT_DIFFICULTY_LEVEL = 5;
+/** Never keep the child waiting on the task lookup for longer than this. */
+const TASK_DIFFICULTY_TIMEOUT_MS = 4000;
+
 function makeNumberChoices(answer: number, count: number) {
   const pool = new Set<number>();
   pool.add(answer);
@@ -357,40 +368,81 @@ export function ChildMiniGameScreen({ route, navigation }: Props) {
   const { child, loading: profileLoading, error: profileError, refresh } = useChildProfile();
   const audio = useAudioGuidance();
   const [assignedDifficultyLevel, setAssignedDifficultyLevel] = useState<number | null>(null);
+  const [taskDifficultyLoaded, setTaskDifficultyLoaded] = useState(!taskId || !supabase);
 
   useEffect(() => {
     if (!taskId || !supabase) {
       setAssignedDifficultyLevel(null);
+      setTaskDifficultyLoaded(true);
       return;
     }
     let active = true;
-    void supabase
-      .from("tasks")
-      .select("description")
-      .eq("id", taskId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!active || !data?.description) {
-          return;
-        }
-        try {
-          const parsed = JSON.parse(data.description) as { difficultyLevel?: number };
-          if (typeof parsed.difficultyLevel === "number") {
-            setAssignedDifficultyLevel(parsed.difficultyLevel);
+    setTaskDifficultyLoaded(false);
+    // A slow/offline lookup must not strand the child on the preparing card;
+    // the level is locked afterwards, so a late answer cannot swap the question.
+    const fallbackTimer = setTimeout(() => {
+      if (active) setTaskDifficultyLoaded(true);
+    }, TASK_DIFFICULTY_TIMEOUT_MS);
+    void (async () => {
+      try {
+        const { data } = await supabase
+          .from("tasks")
+          .select("description")
+          .eq("id", taskId)
+          .maybeSingle();
+        if (!active) return;
+        let level: number | null = null;
+        if (data?.description) {
+          try {
+            const parsed = JSON.parse(data.description) as { difficultyLevel?: number };
+            if (typeof parsed.difficultyLevel === "number") {
+              level = parsed.difficultyLevel;
+            }
+          } catch {
+            // legacy tasks without difficulty in description
           }
-        } catch {
-          // legacy tasks without difficulty in description
         }
-      });
+        setAssignedDifficultyLevel(level);
+      } finally {
+        clearTimeout(fallbackTimer);
+        if (active) setTaskDifficultyLoaded(true);
+      }
+    })();
     return () => {
       active = false;
+      clearTimeout(fallbackTimer);
     };
   }, [taskId]);
 
-  const difficultyLevel = taskId
-    ? (assignedDifficultyLevel ?? child?.difficulty_level ?? 5)
-    : BONUS_PLAY_DIFFICULTY_LEVEL;
-  const settings = useMemo(() => getGameSettings(difficultyLevel, gameId), [difficultyLevel, gameId]);
+  // The assigned task's difficulty arrives a moment after mount. Generating
+  // questions before that used to swap the question out from under the child
+  // (and the narration then described a question that was no longer on screen).
+  // Lock the level once, then keep it for the whole run.
+  const [gameDifficultyLevel, setGameDifficultyLevel] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (gameDifficultyLevel != null || profileLoading || !taskDifficultyLoaded) {
+      return;
+    }
+    if (!taskId) {
+      setGameDifficultyLevel(BONUS_PLAY_DIFFICULTY_LEVEL);
+      return;
+    }
+    setGameDifficultyLevel(assignedDifficultyLevel ?? child?.difficulty_level ?? 5);
+  }, [
+    assignedDifficultyLevel,
+    child?.difficulty_level,
+    gameDifficultyLevel,
+    profileLoading,
+    taskDifficultyLoaded,
+    taskId,
+  ]);
+
+  const difficultyReady = gameDifficultyLevel != null;
+  const settings = useMemo(
+    () => getGameSettings(gameDifficultyLevel ?? DEFAULT_DIFFICULTY_LEVEL, gameId),
+    [gameDifficultyLevel, gameId]
+  );
   const [questionOrder, setQuestionOrder] = useState(() => shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]));
   const [round, setRound] = useState(0);
   const [score, setScore] = useState(0);
@@ -398,8 +450,6 @@ export function ChildMiniGameScreen({ route, navigation }: Props) {
   const [celebrationKey, setCelebrationKey] = useState(0);
   const [feedback, setFeedback] = useState<boolean | null>(null);
   const [locked, setLocked] = useState(false);
-  const lastSpokenRoundRef = useRef<number | null>(null);
-  const promptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSavingReward, setIsSavingReward] = useState(false);
@@ -442,12 +492,12 @@ export function ChildMiniGameScreen({ route, navigation }: Props) {
   }, [gameId, questionSlot, settings]);
 
   const spokenPrompt = useMemo(() => {
-    if (profileLoading || profileError || done) {
+    if (profileLoading || !difficultyReady || profileError || done) {
       return null;
     }
     if (gameId === "science") {
       if (!scienceRound) return null;
-      return scienceRound.mode === "mcq" ? scienceRound.q : scienceRound.q;
+      return scienceRound.q;
     }
     if (gameId === "alphabet") {
       return alphabetRound?.prompt ?? null;
@@ -459,29 +509,33 @@ export function ChildMiniGameScreen({ route, navigation }: Props) {
       return shapeRound?.prompt ?? null;
     }
     return numberRound?.prompt ?? null;
-  }, [alphabetRound, colorRound, done, gameId, numberRound, profileError, profileLoading, scienceRound, shapeRound]);
+  }, [
+    alphabetRound,
+    colorRound,
+    difficultyReady,
+    done,
+    gameId,
+    numberRound,
+    profileError,
+    profileLoading,
+    scienceRound,
+    shapeRound,
+  ]);
 
+  // Read the current question. The timer owns the utterance and is cancelled on
+  // every dependency change, so a question always gets narrated exactly once -
+  // even after a wrong answer, which previously left the narration silent.
   useEffect(() => {
-    if (promptTimerRef.current) {
-      clearTimeout(promptTimerRef.current);
-      promptTimerRef.current = null;
-    }
     if (!spokenPrompt) return;
-    // If feedback is still showing, let it be spoken first; prompt will speak after feedback clears.
-    if (feedback) return;
-    if (lastSpokenRoundRef.current === round) return;
-    lastSpokenRoundRef.current = round;
-    promptTimerRef.current = setTimeout(() => {
+    const delay = feedback == null ? PROMPT_DELAY_MS : PROMPT_AFTER_FEEDBACK_MS;
+    const timer = setTimeout(() => {
       audio.speak(spokenPrompt, { enabled: audioEnabled, rate: audioRate });
-    }, 250);
-  }, [spokenPrompt, audio, feedback, round, audioEnabled, audioRate]);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [spokenPrompt, feedback, round, audio, audioEnabled, audioRate]);
 
   useEffect(() => {
     return () => {
-      if (promptTimerRef.current) {
-        clearTimeout(promptTimerRef.current);
-        promptTimerRef.current = null;
-      }
       if (advanceTimerRef.current) {
         clearTimeout(advanceTimerRef.current);
         advanceTimerRef.current = null;
@@ -516,7 +570,7 @@ export function ChildMiniGameScreen({ route, navigation }: Props) {
           setRound(next);
         }
         setLocked(false);
-      }, 700);
+      }, FEEDBACK_HOLD_MS);
     },
     [round, settings.rounds, audio, locked, audioEnabled, audioRate]
   );
@@ -529,7 +583,6 @@ export function ChildMiniGameScreen({ route, navigation }: Props) {
     setFeedback(null);
     setSaveError(null);
     setRewardSaved(false);
-    lastSpokenRoundRef.current = null;
   };
 
   const xpEarned = score * settings.xpPerCorrect;
@@ -561,7 +614,12 @@ export function ChildMiniGameScreen({ route, navigation }: Props) {
         p_child_id: child.id,
         p_points: xpEarned,
         p_event_type: "game_completed",
-        p_metadata: { game_id: gameId, score, rounds: settings.rounds, difficulty: difficultyLevel },
+        p_metadata: {
+          game_id: gameId,
+          score,
+          rounds: settings.rounds,
+          difficulty: gameDifficultyLevel ?? DEFAULT_DIFFICULTY_LEVEL,
+        },
       });
       setIsSavingReward(false);
       if (error) {
@@ -574,7 +632,18 @@ export function ChildMiniGameScreen({ route, navigation }: Props) {
       await refresh();
     }
     void award();
-  }, [done, rewardSaved, child, xpEarned, gameId, score, settings.rounds, difficultyLevel, refresh, taskId]);
+  }, [
+    done,
+    rewardSaved,
+    child,
+    xpEarned,
+    gameId,
+    score,
+    settings.rounds,
+    gameDifficultyLevel,
+    refresh,
+    taskId,
+  ]);
 
   useEffect(() => {
     async function completeLearningTask() {
@@ -675,7 +744,9 @@ export function ChildMiniGameScreen({ route, navigation }: Props) {
     );
   }
 
-  if (profileLoading) {
+  // Hold the first question until the real difficulty is known, otherwise the
+  // question is generated twice and the second one replaces the first mid-read.
+  if (profileLoading || !difficultyReady) {
     return (
       <ScreenContainer scroll>
         <Card style={[{ backgroundColor: c.card, borderRadius: radii.lg }, shadows.card]}>
